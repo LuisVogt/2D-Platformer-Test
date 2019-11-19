@@ -22,6 +22,11 @@ public class Timer
         return false;
     }
 
+    public void Finish()
+    {
+        currentTime = 0;
+    }
+
     public void StartTimer()
     {
         currentTime = maxTime;
