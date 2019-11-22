@@ -16,6 +16,7 @@ TagManager:
   - Ground
   - Enemy
   - Player
+  - EnemyDamageHitbox
   - 
   - 
   - 
@@ -35,8 +36,7 @@ TagManager:
   - 
   - 
   - 
-  - 
-  - 
+  - Background
   m_SortingLayers:
   - name: Default
     uniqueID: 0

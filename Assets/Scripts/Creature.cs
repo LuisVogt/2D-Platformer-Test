@@ -9,6 +9,7 @@ public class Creature : MonoBehaviour
     private Animator animator;
     public float damageAnimationDuration = 0.1f;
     private Timer damageAnimationTimer;
+    public GameObject explosionPrefab;
     private void Start()
     {
         animator = GetComponent<Animator>();
@@ -25,13 +26,19 @@ public class Creature : MonoBehaviour
         damageAnimationTimer.Update(Time.deltaTime);
     }
 
-    public void Die()
+    public virtual void Die()
     {
         Destroy(this.gameObject);
     }
 
+    public float CalculateHealthPercentage()
+    {
+        return (float)currentHP / (float)maxHP;
+    }
+
     public void TakeDamage(int damage)
     {
+        Instantiate(explosionPrefab, this.transform);
         if(animator)
         {
             damageAnimationTimer.StartTimer();

@@ -5,11 +5,10 @@ using UnityEngine;
 public class DamageHitbox : MonoBehaviour
 {
     public int damage;
-    int targetLayer = 9; //put layer of the creature that will be affected;
+    public int targetLayer = 9; //put layer of the creature that will be affected;
 
     public void init(int _targetLayer)
     {
-        Debug.Log("initing " + _targetLayer);
         targetLayer = _targetLayer;
     }
 

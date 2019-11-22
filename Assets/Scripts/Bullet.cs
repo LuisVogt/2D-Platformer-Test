@@ -41,13 +41,17 @@ public class Bullet : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         GameObject collided = collision.gameObject;
-        if (collision.gameObject.layer == targetLayer)
+        int layer = collision.gameObject.layer;
+        if (layer == targetLayer)
         {
             if (collided.GetComponent<Creature>())
             { 
                 collided.GetComponent<Creature>().TakeDamage(damage);
             }
+            Destroy(this.gameObject);
+            return;
         }
-        Destroy(this.gameObject);
+        if(layer == LayerMask.NameToLayer("Ground"))
+            Destroy(this.gameObject);
     }
 }

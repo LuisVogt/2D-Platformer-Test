@@ -11,6 +11,7 @@ public class PlayerController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private bool isFacingRight = true;
     private Vector2 targetVelocity;
+    private Vector2 targetDashVelocity;
     private RaycastHit2D[] collisions = new RaycastHit2D[16];
     private ContactFilter2D contactFilter = new ContactFilter2D();
     public float raycastDistance = 0.01f;
@@ -27,17 +28,21 @@ public class PlayerController : MonoBehaviour
     private bool isDashing = false;
 
     public float WallJumpLockdownTime = 1f;
-    public float SwordSlashInterval = 1f;
+    public float SwordSlashInterval = 0.5f;
     public float DashDuration = 1f;
+    public float DashCooldown = 2f;
     public float SlashAnimationDuration = 0.1f;
     public float ShootAnimationDuration = 0.1f;
+    public float ShootingCooldownDuration= 2.0f;
+    private float gravityScale;
 
     private Timer WalljumpLockdownTimer;
     private Timer SwordSlashCooldownTimer;
     private Timer DashDurationTimer;
     private Timer SlashAnimationTimer;
     private Timer ShootAnimationTimer;
-
+    private Timer DashCooldownTimer;
+    private Timer ShootingCooldown;
     private Animator animator;
     // Start is called before the first frame update
     void Start()
@@ -47,6 +52,8 @@ public class PlayerController : MonoBehaviour
         DashDurationTimer = new Timer(DashDuration);
         SlashAnimationTimer = new Timer(SlashAnimationDuration);
         ShootAnimationTimer = new Timer(ShootAnimationDuration);
+        DashCooldownTimer = new Timer(DashCooldown);
+        ShootingCooldown = new Timer(ShootingCooldownDuration);
         collider = GetComponent<Collider2D>();
         contactFilter.useTriggers = false;
         contactFilter.SetLayerMask(Physics2D.GetLayerCollisionMask(gameObject.layer));
@@ -54,6 +61,7 @@ public class PlayerController : MonoBehaviour
         rigidbody = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
+        gravityScale = rigidbody.gravityScale;
     }
 
     // Update is called once per frame
@@ -66,7 +74,7 @@ public class PlayerController : MonoBehaviour
         targetVelocity = Vector2.zero;
         targetVelocity.x = Input.GetAxisRaw("Horizontal") * maxSpeed;
 
-        if(Input.GetButtonDown("Fire1"))
+        if(Input.GetButtonDown("Fire1")&&ShootingCooldown.isDone())
         {
             Shoot();
         }
@@ -90,7 +98,7 @@ public class PlayerController : MonoBehaviour
             targetVelocity.y += jumpSpeed;
         }
 
-        if(Input.GetButtonDown("Fire3")&&DashDurationTimer.isDone())
+        if(Input.GetButtonDown("Fire3")&&DashCooldownTimer.isDone())
         {
             StartDash();
         }
@@ -110,6 +118,10 @@ public class PlayerController : MonoBehaviour
         if(!DashDurationTimer.isDone())
         {
             Dash();
+        }
+        else
+        {
+            EndDash();
         }
 
         int collisionsX = rigidbody.Cast(new Vector2(targetVelocity.x,0), contactFilter, collisions, 0.1f);
@@ -133,6 +145,7 @@ public class PlayerController : MonoBehaviour
         if(isSlidingOnWall)
         {
             targetVelocity.y = -maxSpeed/3 - rigidbody.velocity.y;
+            //DashDurationTimer.Finish();
         }
 
         setDirection();
@@ -151,12 +164,9 @@ public class PlayerController : MonoBehaviour
         DashDurationTimer.Update(Time.deltaTime);
         SlashAnimationTimer.Update(Time.deltaTime);
         ShootAnimationTimer.Update(Time.deltaTime);
+        DashCooldownTimer.Update(Time.deltaTime);
+        ShootingCooldown.Update(Time.deltaTime);
     }
-
-    //private void FixedUpdate()
-    //{
-    //    rigidbody.velocity = new Vector2(targetVelocity.x, rigidbody.velocity.y + targetVelocity.y);
-    //}
 
     bool CheckIfTouchingGround()
     {
@@ -217,6 +227,7 @@ public class PlayerController : MonoBehaviour
 
     void Shoot()
     {
+        ShootingCooldown.StartTimer();
         ShootAnimationTimer.StartTimer();
         Vector2 direction = CheckIfLookingRight() ? Vector2.right : Vector2.left;
         GameObject bullet = Instantiate(bulletPrefab,new Vector3(collider.bounds.center.x + collider.bounds.extents.x * direction.x * 1.3f,collider.bounds.center.y + collider.bounds.extents.y * 0.5f,0),Quaternion.identity);
@@ -236,14 +247,22 @@ public class PlayerController : MonoBehaviour
     void StartDash()
     {
         DashDurationTimer.StartTimer();
+        DashCooldownTimer.StartTimer();
+        targetVelocity.y = -rigidbody.velocity.y;
+        rigidbody.gravityScale = 0;
+        int direction = CheckIfLookingRight() ? 1 : -1;
+        targetDashVelocity.x = dashSpeed * direction;
     }
 
     void Dash()
     {
-        int direction = CheckIfLookingRight() ? 1 : -1;
-        targetVelocity.x = dashSpeed * direction;
-        targetVelocity.y = -rigidbody.velocity.y;
+        targetVelocity.x = targetDashVelocity.x;
         isDashing = true;
+    }
+
+    void EndDash()
+    {
+        rigidbody.gravityScale = gravityScale;
     }
 
     void setDirection()
@@ -271,7 +290,6 @@ public class PlayerController : MonoBehaviour
         bool isPressingRight = Input.GetAxisRaw("Horizontal") > 0 ? true : false;
         if(isPressingRight == isFacingRight)
         {
-            Debug.Log(isSlidingOnWall);
             isSlidingOnWall = true;
         }
 
